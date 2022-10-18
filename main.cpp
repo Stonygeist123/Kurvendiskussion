@@ -1,73 +1,56 @@
 ﻿#include "Derivation/Derivation.hpp"
 #include "Graph/Graph.hpp"
-#include "Nullstellen/Zeros.hpp"
+#include "Zeros/Zeros.hpp"
 #include "utils.hpp"
 #include <iostream>
+#include <numbers>
 #include <regex>
 #include <set>
+#include <thread>
 
 int main() {
-	std::string func;
-	while (func != "stop") {
-		func = "";
+	std::string input;
+	while (input != "stop") {
+		input = "";
 		std::cout << "Gebe eine Funktion ein:\n\u001b[32m> ";
-		std::getline(std::cin, func);
-		if (func.empty())
+		std::getline(std::cin, input);
+		if (input.empty())
 			continue;
 		std::cout << "\u001b[0m";
 
-		std::vector<float> xs{}, xf{};
-		float term = 0;
-		bool neg = false;
+		if (input.contains("pi"))
+			input.replace(input.find("pi"), 2, "3.1415927");
+		if (input.contains("e"))
+			input.replace(input.find('e'), 1, "2.7182817");
 
-		const auto x = split(func, ' ');
-		for (const std::string& f : split(func, ' ')) {
-			float exponent = 1;
-			if (f.contains('x')) {
-				if (f.contains(('^')))
-					exponent = std::stof(f.substr(std::distance(f.begin(), std::find(f.begin(), f.end(), '^')) + 1));
+		std::pair<float, std::map<float, float>> function = generate_func(input);
 
-				xs.push_back(exponent);
-				xf.push_back(std::isdigit(f.at(0))
-								 ? std::stof(f.substr(0, std::distance(f.begin(), std::find(f.begin(), f.end(), 'x'))))
-								 : 1);
-				xf.at(xf.size() - 1) = -xf.at(xf.size() - 1);
+		const Zeros zeros = Zeros(function);
+		std::thread t1{ [&zeros] {
+			const std::optional<std::vector<float>> z = zeros.get();
+			if (z.has_value() && !z.value().empty()) {
+				std::set<float> zS = std::set(z.value().begin(), z.value().end());
+				for (unsigned long i = 0; i < zS.size(); ++i)
+					std::cout << "Nullstelle " << i + 1 << ": \u001b[36m("
+							  << format(std::vector(zS.begin(), zS.end()).at(i)) << " | " << 0 << ")\u001b[0m\n\n";
 			}
-			else if (f == "-") {
-				neg = true;
-				continue;
-			}
-			else if (f.end() != std::find_if(f.begin(), f.end(), [](const unsigned char& c) {
-						 return !isdigit(c) && c != '.' && c != '-';
-					 }))
-				continue;
-			else {
-				const float t = std::stof(f);
-				term = neg ? -t : t;
-			}
+			else
+				std::cout << "Keine Nullstelle\n\n";
+		} };
+		t1.join();
 
-			neg = false;
-		}
+		const Derivation derivation = Derivation(function);
+		std::thread t2{ [&derivation] {
+			const std::vector<std::string> derivs = derivation.get();
 
-		const Zeros zeros = Zeros(xf, xs, term);
-		const std::optional<std::vector<float>> z = zeros.get();
-		if (z.has_value() && !z.value().empty()) {
-			std::set<float> zS = std::set(z.value().begin(), z.value().end());
-			for (unsigned long i = 0; i < zS.size(); ++i)
-				std::cout << "Nullstelle " << i + 1 << ": \u001b[36m("
-						  << format(std::vector(zS.begin(), zS.end()).at(i)) << " | " << 0 << ")\u001b[0m\n\n";
-		}
-		else
-			std::cout << "Keine Nullstelle\n\n";
+			for (size_t i = 0; i < derivs.size(); ++i)
+				std::cout << "Ableitung " << i + 1 << ": " << derivs.at(i) << '\n';
+			std::cout << '\n';
+		} };
+		t2.join();
 
-		/*const Derivation derivation = Derivation(xf, xs, term);
-		const std::vector<std::string> derivs = derivation.get();
-
-		for (size_t i = 0; i < derivs.size(); ++i)
-			std::cout << "Ableitung " << i + 1 << ": " << derivs.at(i) << '\n';
-		std::cout << '\n'; */
-
-		const Graph graph = Graph("C:\\Users\\Yunus\\source\\repos\\Kurvendiskussion", xf, xs, term);
-		graph.create_image();
+		const Graph graph = Graph(input, "C:\\Users\\Yunus\\source\\repos\\Kurvendiskussion", function);
+		std::thread t3{ [&graph] { std::cout << graph.create_image() << "\n\n"; } };
+		t3.join();
 	}
 }

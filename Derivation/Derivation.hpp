@@ -11,7 +11,9 @@ class Derivation {
 public:
 	std::vector<float> xs, xf;
 	float term;
-	Derivation(std::vector<float>, std::vector<float>, float);
+	std::pair<float, std::map<float, float>> function;
+	Derivation(std::pair<float, std::map<float, float>>);
 	std::vector<std::string> get() const;
-	std::pair<float, std::map<float, float>> getDeriv(std::vector<float>, std::vector<float>, float) const;
+	std::pair<float, std::vector<std::pair<float, float>>> getDeriv(std::vector<float>, std::vector<float>,
+																	float) const;
 };

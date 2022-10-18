@@ -1,5 +1,7 @@
 #pragma once
+#include <algorithm>
 #include <fstream>
+#include <map>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -7,17 +9,18 @@
 #include <windows.graphics.h>
 #include <wtypes.h>
 
-constexpr float coordinate_max_x = 20, coordinate_min_x = -20, coordinate_max_y = 100, coordinate_min_y = -100,
+constexpr float coordinate_max_x = 100, coordinate_min_x = -100, coordinate_max_y = 500, coordinate_min_y = -500,
 				x_coordinate_range = coordinate_max_x - coordinate_min_x,
 				y_coordinate_range = coordinate_max_y - coordinate_min_y, y_offset = -coordinate_min_y;
 constexpr std::uint8_t line_width = 3;
 
 class Graph {
 public:
-	const std::vector<float> xs, xf;
+	std::vector<float> xs, xf;
 	const float term;
-	const std::string outdir;
-	Graph(std::string, std::vector<float>, std::vector<float>, float);
+	const std::string outdir, function_s;
+	std::pair<float, std::map<float, float>> function;
+	Graph(std::string, std::string, std::pair<float, std::map<float, float>>);
 
 	static std::pair<int, int> getScreenRange();
 	float calc_f(const float) const;
